@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { PendingPayment } from "@/components/PendingPayment";
 import { PlanCalendar } from "@/components/PlanCalendar";
@@ -64,6 +65,19 @@ export default async function ReportPage({ params, searchParams }: { params: Pro
       <div className="card"><h2 className="mb-3 text-lg font-bold">قيمك مرتبة</h2><ValueBars values={result.values} /></div>
 
       <SynthesisView assessmentId={id} existing={synthesis} />
+
+      <div className="readout grid gap-3 md:grid-cols-2">
+        <div>
+          <div className="text-lg font-bold">الخطوة التالية: اصنع هويتك</div>
+          <p className="text-sm text-muted">القراءة تخبرك من أنت. في مرحلة البناء تكتب أنت قيمك ورسالتك وتموضعك وحدودك، بمساعدة اقتراحات من نتائجك، وتخرج بوثيقة هوية.</p>
+          <Link href={`/build/${id}`} className="btn-primary mt-3">ابدأ البناء</Link>
+        </div>
+        <div>
+          <div className="text-lg font-bold">ثم نفّذ التسعين يوماً</div>
+          <p className="text-sm text-muted">متابعة أسبوعية للعادات الثلاث والمعالم، وسؤال تأمل كل أسبوع، ومراجعة كبرى بعد ستة أشهر.</p>
+          <Link href={`/plan/${id}`} className="btn mt-3">افتح المتابعة</Link>
+        </div>
+      </div>
 
       <PlanCalendar plan={plan} ai={synthesis?.plan ?? null} />
 

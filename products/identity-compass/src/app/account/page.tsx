@@ -47,6 +47,8 @@ export default async function AccountPage() {
                 <div className="flex gap-2">
                   <Link href={`/results/${r.id}`} className="btn">النتيجة</Link>
                   {paid ? <Link href={`/report/${r.id}`} className="btn-primary">التقرير</Link> : null}
+                  {paid ? <Link href={`/build/${r.id}`} className="btn">هويتي</Link> : null}
+                  {paid ? <Link href={`/plan/${r.id}`} className="btn">الخطة</Link> : null}
                 </div>
               </li>
             );

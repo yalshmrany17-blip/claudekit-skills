@@ -49,6 +49,12 @@ export function LocalResults() {
           {unlocked ? <div className="card"><h2 className="mb-3 text-lg font-bold">قواك المميزة</h2><StrengthBars strengths={data.result.strengths} /></div> : null}
         </div>
       </div>
+      {unlocked ? (
+        <div className="readout flex flex-wrap items-center justify-between gap-3">
+          <div className="font-bold">الخطوة التالية: اصنع هويتك ثم نفّذ التسعين يوماً.</div>
+          <div className="flex gap-2"><a href="/build/local" className="btn-primary">ابدأ البناء</a><a href="/plan/local" className="btn">المتابعة</a></div>
+        </div>
+      ) : null}
       {unlocked ? <PlanCalendar plan={buildPlan(data.result)} /> : null}
       <ReportView blocks={blocks} unlocked={unlocked} />
     </div>
