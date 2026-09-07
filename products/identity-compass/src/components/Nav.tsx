@@ -24,6 +24,7 @@ export async function Nav() {
           <Compass />
           <span className="display text-2xl leading-none">{SITE.name}</span>
         </Link>
+        {SITE.beta ? <span className="pill bg-accent-soft text-accent-deep">تجربة مفتوحة</span> : null}
         <div className="ms-auto flex items-center gap-4 text-sm font-semibold">
           <Link href="/#how" className="text-muted hover:text-ink">كيف يعمل</Link>
           <Link href="/#pricing" className="text-muted hover:text-ink">الأسعار</Link>

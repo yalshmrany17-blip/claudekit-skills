@@ -20,6 +20,8 @@ const PAID = [
   "قراءة الشركة لبياناتك: قراءات بدليل، قيم، رسالة، حدود، مسار",
   "مرحلة البناء: تكتب هويتك بنفسك وتخرج بوثيقة هوية قابلة للطباعة",
   "خطة التسعين يوماً مخصصة مع متابعة أسبوعية للعادات والمعالم",
+  "رسالة العشرة أشخاص: ردود مجهولة ومنطقتك العمياء",
+  "فحص وضوح هويتك بالذكاء الاصطناعي بعد أن تكتبها",
   "ثمانية أسئلة للتأمل وموعد المراجعة",
   "طباعة أو حفظ PDF",
 ];
@@ -57,7 +59,7 @@ export default function Home() {
             <Link href="/test" className="btn-primary px-7 text-lg">ابدأ التقييم مجاناً</Link>
             <a href="#how" className="btn px-6">كيف يعمل؟</a>
           </div>
-          <p className="mt-3 text-sm text-muted">{SITE.minutes} دقيقة · النتيجة الأولى مجانية · بلا بطاقة</p>
+          <p className="mt-3 text-sm text-muted">{SITE.minutes} دقيقة · {SITE.beta ? "كل شيء مجاني خلال فترة التجربة" : "النتيجة الأولى مجانية"} · بلا بطاقة</p>
         </div>
         <div className="hidden justify-center md:flex">
           <Compass size={220} />
@@ -93,7 +95,7 @@ export default function Home() {
           </div>
           <div className="card border-accent">
             <div className="flex items-center gap-3">
-              <span className="pill bg-accent-soft text-accent-deep">{SITE.price.report} {SITE.price.currency}</span>
+              <span className="pill bg-accent-soft text-accent-deep">{SITE.beta ? "مجاني خلال التجربة" : `${SITE.price.report} ${SITE.price.currency}`}</span>
               <h3 className="text-lg font-bold">التقرير الكامل</h3>
             </div>
             <ul className="mt-4 space-y-2">
@@ -120,7 +122,16 @@ export default function Home() {
 
       <section id="pricing" className="border-t border-line py-14">
         <h2 className="display text-4xl">الأسعار</h2>
-        <div className="mt-8 grid gap-5 md:grid-cols-3">
+        {SITE.beta ? (
+          <div className="readout mt-8 flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <div className="text-xl font-bold">فترة التجربة المفتوحة: كل شيء مجاني الآن</div>
+              <p className="mt-1 max-w-prose text-muted">التقييم، التقرير الكامل، قراءة الشركة، مرحلة البناء، متابعة التسعين يوماً، ورسالة العشرة أشخاص. نعلن الأسعار بعد التجربة، ومن يجرّب الآن يحتفظ بما بناه.</p>
+            </div>
+            <Link href="/test" className="btn-primary px-7 text-lg">جرّب الآن</Link>
+          </div>
+        ) : null}
+        <div className={`mt-8 grid gap-5 md:grid-cols-3 ${SITE.beta ? "hidden" : ""}`}>
           <div className="card">
             <h3 className="text-lg font-bold">النتيجة الأولى</h3>
             <div className="mt-2 text-3xl font-bold">مجاناً</div>

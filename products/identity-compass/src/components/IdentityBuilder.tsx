@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { IdentityDocView } from "@/components/IdentityDocView";
+import { IdentityReview } from "@/components/IdentityReview";
+import type { FeedbackSummary, IdentityReview as Review } from "@/lib/engine/feedback";
 import { builderHints, composeMission, identityFilled, identityToText, type IdentityDoc } from "@/lib/engine/identity";
 import type { Synthesis } from "@/lib/engine/synthesis";
 import type { Answers, Result } from "@/lib/engine/types";
@@ -18,6 +20,8 @@ type Props = {
   synthesis: Synthesis | null;
   initial: IdentityDoc;
   name: string;
+  review?: Review | null;
+  feedback?: FeedbackSummary | null;
 };
 
 function Hint({ title, items, onUse }: { title: string; items: string[]; onUse?: (s: string) => void }) {
@@ -39,7 +43,7 @@ function Hint({ title, items, onUse }: { title: string; items: string[]; onUse?:
   );
 }
 
-export function IdentityBuilder({ assessmentId, userId, result, answers, synthesis, initial, name }: Props) {
+export function IdentityBuilder({ assessmentId, userId, result, answers, synthesis, initial, name, review = null, feedback = null }: Props) {
   const [doc, setDoc] = useState<IdentityDoc>(initial);
   const [step, setStep] = useState(0);
   const [status, setStatus] = useState<"idle" | "saving" | "saved" | "local" | "error">("idle");
@@ -198,6 +202,8 @@ export function IdentityBuilder({ assessmentId, userId, result, answers, synthes
           ) : null}
 
           {step === 6 ? (
+            <div className="space-y-4">
+            {assessmentId !== "local" ? <IdentityReview assessmentId={assessmentId} initial={review} disabled={!doc.line && !doc.values.some((v) => v.name)} /> : null}
             <div className="card">
               <IdentityDocView doc={doc} name={name} />
               <div className="mt-5 flex flex-wrap gap-2 no-print">
@@ -205,6 +211,7 @@ export function IdentityBuilder({ assessmentId, userId, result, answers, synthes
                 <button type="button" className="btn" onClick={async () => { try { await navigator.clipboard.writeText(identityToText(doc, name)); } catch {} }}>نسخ النص</button>
                 <Link href={`/plan/${assessmentId}`} className="btn-primary">انتقل إلى خطة التسعين يوماً</Link>
               </div>
+            </div>
             </div>
           ) : null}
 
@@ -222,6 +229,7 @@ export function IdentityBuilder({ assessmentId, userId, result, answers, synthes
               <Hint title="نمطك" items={[hints.typeName]} />
               <Hint title="قواك المميزة" items={hints.strengths} />
               <Hint title="ما يطلبه الناس منك" items={hints.asked ? [hints.asked] : []} />
+              {feedback ? <Hint title="ما ينصحك الناس أن تعززه" items={feedback.keep_themes.map((t) => t.theme)} /> : null}
             </>
           ) : null}
           {step === 1 ? (
@@ -243,7 +251,12 @@ export function IdentityBuilder({ assessmentId, userId, result, answers, synthes
             </>
           ) : null}
           {step === 4 ? <Hint title="كلماتك وكلمات الناس" items={hints.words ? [hints.words] : []} /> : null}
-          {step === 5 ? <Hint title="حدود مقترحة" items={hints.boundaries} onUse={(s) => update((d) => { const i = d.boundaries.findIndex((x) => !x); if (i >= 0) d.boundaries[i] = s; else if (d.boundaries.length < 4) d.boundaries.push(s); return d; })} /> : null}
+          {step === 5 ? (
+            <>
+              <Hint title="حدود مقترحة" items={hints.boundaries} onUse={(s) => update((d) => { const i = d.boundaries.findIndex((x) => !x); if (i >= 0) d.boundaries[i] = s; else if (d.boundaries.length < 4) d.boundaries.push(s); return d; })} />
+              {feedback ? <Hint title="منطقتك العمياء من ردود الناس" items={feedback.blind_spots} /> : null}
+            </>
+          ) : null}
           {step === 6 ? <p className="text-sm text-muted">القسم الأول من الوثيقة يصلح للنشر؛ القيم والحدود لك وحدك.</p> : null}
         </aside>
       </div>

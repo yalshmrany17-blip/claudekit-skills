@@ -66,11 +66,16 @@ export default async function ReportPage({ params, searchParams }: { params: Pro
 
       <SynthesisView assessmentId={id} existing={synthesis} />
 
-      <div className="readout grid gap-3 md:grid-cols-2">
+      <div className="readout grid gap-3 md:grid-cols-3">
         <div>
           <div className="text-lg font-bold">الخطوة التالية: اصنع هويتك</div>
           <p className="text-sm text-muted">القراءة تخبرك من أنت. في مرحلة البناء تكتب أنت قيمك ورسالتك وتموضعك وحدودك، بمساعدة اقتراحات من نتائجك، وتخرج بوثيقة هوية.</p>
           <Link href={`/build/${id}`} className="btn-primary mt-3">ابدأ البناء</Link>
+        </div>
+        <div>
+          <div className="text-lg font-bold">اسأل عشرة أشخاص</div>
+          <p className="text-sm text-muted">رابط ترسله لمن تثق برأيهم، تصلك ردودهم مجهولة، ويستخرج التحليل منطقتك العمياء التي لا يراها أي اختبار.</p>
+          <Link href={`/feedback/${id}`} className="btn mt-3">افتح الأداة</Link>
         </div>
         <div>
           <div className="text-lg font-bold">ثم نفّذ التسعين يوماً</div>

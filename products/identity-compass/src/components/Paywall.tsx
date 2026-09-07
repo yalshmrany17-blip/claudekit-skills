@@ -45,6 +45,20 @@ export function Paywall({ assessmentId, userId, email }: { assessmentId: string;
     });
   }
 
+  if (SITE.beta) {
+    return (
+      <div className="readout">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div className="text-lg font-bold">فترة التجربة المفتوحة</div>
+            <p className="text-muted">التقرير الكامل ومزايا بلس مفتوحة للجميع الآن بلا دفع. نعلن الأسعار بعد التجربة.</p>
+          </div>
+          <a href={`/report/${assessmentId}`} className="btn-primary px-7 text-lg">افتح التقرير الكامل</a>
+        </div>
+      </div>
+    );
+  }
+
   if (!token || !priceId) {
     return (
       <div className="readout">
