@@ -1,0 +1,110 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --paper: #f2f4f7;
+  --panel: #ffffff;
+  --ink: #172033;
+  --muted: #5c667a;
+  --line: #d3d9e3;
+  --accent: #b5731b;
+  --accent-deep: #7c4d0f;
+  --accent-soft: #f6e9d2;
+  --on-accent: #ffffff;
+  --good: #1f7a55;
+  --warn: #b4530f;
+  --bad: #b42318;
+  --good-soft: #e3f3ea;
+  --warn-soft: #fbe9da;
+  --bad-soft: #fbe3e1;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0e1524;
+    --panel: #16203a;
+    --ink: #e8ecf4;
+    --muted: #a5afc4;
+    --line: #2b3753;
+    --accent: #e2a544;
+    --accent-deep: #f1c97a;
+    --accent-soft: #33291a;
+    --on-accent: #14110a;
+    --good: #4cc38a;
+    --warn: #f0a05a;
+    --bad: #f08080;
+    --good-soft: #15342a;
+    --warn-soft: #3b2a17;
+    --bad-soft: #3e1f1f;
+    color-scheme: dark;
+  }
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-paper text-ink font-arabic antialiased;
+    font-size: 17px;
+    line-height: 1.85;
+  }
+  h1, h2, h3 {
+    text-wrap: balance;
+  }
+  input, select, textarea, button {
+    font: inherit;
+    color: inherit;
+  }
+}
+
+@layer components {
+  .container-prose {
+    @apply mx-auto w-full max-w-3xl px-5;
+  }
+  .btn {
+    @apply inline-flex min-h-[46px] items-center justify-center gap-2 rounded-lg border border-line bg-panel px-5 py-2 font-semibold transition hover:border-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent disabled:cursor-default disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply btn border-accent bg-accent text-[color:var(--on-accent)] hover:brightness-105;
+  }
+  .field {
+    @apply w-full rounded-lg border border-line bg-panel px-3 py-2.5 leading-relaxed focus:border-accent focus:outline focus:outline-2 focus:outline-accent;
+  }
+  .seg {
+    @apply inline-flex overflow-hidden rounded-lg border border-line bg-panel;
+  }
+  .seg-btn {
+    @apply min-w-[44px] cursor-pointer border-s border-line px-3 py-2 text-center text-sm text-muted transition first:border-s-0 hover:bg-accent-soft focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-accent;
+    font-variant-numeric: tabular-nums;
+  }
+  .seg-btn[aria-pressed="true"] {
+    @apply bg-accent font-semibold text-[color:var(--on-accent)];
+  }
+  .card {
+    @apply rounded-xl border border-line bg-panel p-5;
+  }
+  .readout {
+    @apply rounded-xl bg-accent-soft p-5;
+  }
+  .display {
+    @apply font-display font-normal;
+  }
+  .pill {
+    @apply inline-block rounded-full px-3 py-0.5 text-sm font-semibold;
+  }
+}
+
+.locked-preview {
+  filter: blur(6px);
+  user-select: none;
+  pointer-events: none;
+}
+
+@media print {
+  nav, footer, .no-print { display: none !important; }
+  body { background: #fff; color: #000; font-size: 13px; }
+  .card, .readout { border: 1px solid #ddd; background: #fff; break-inside: avoid; }
+}
