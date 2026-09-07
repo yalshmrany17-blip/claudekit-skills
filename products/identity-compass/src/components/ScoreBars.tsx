@@ -1,5 +1,6 @@
 import { BIG5_NAMES, VALUE_NAMES } from "@/lib/engine/items";
 import { INDEX_LABEL, MARCIA_LABEL, big5Band, BAND_LABEL } from "@/lib/engine/report";
+import { DICHOTOMY_META, STRENGTHS, type Dichotomy } from "@/lib/engine/types16";
 import type { Big5Key, Result } from "@/lib/engine/types";
 
 export function Gauge({ score, band }: { score: number; band: Result["index"]["band"] }) {
@@ -20,12 +21,24 @@ export function Gauge({ score, band }: { score: number; band: Result["index"]["b
   );
 }
 
+function BarRow({ label, value, suffix }: { label: string; value: number; suffix: string }) {
+  return (
+    <>
+      <span className="font-medium">{label}</span>
+      <div className="h-2.5 overflow-hidden rounded-full bg-line" aria-hidden="true">
+        <div className="h-full rounded-full bg-accent" style={{ width: `${Math.max(2, Math.min(100, value))}%` }} />
+      </div>
+      <span className="text-muted tabular-nums">{suffix}</span>
+    </>
+  );
+}
+
 export function Big5Bars({ big5 }: { big5: Result["big5"] }) {
   const keys: Big5Key[] = ["O", "C", "E", "A", "N"];
   return (
     <div className="grid grid-cols-[auto_1fr_auto] items-center gap-x-4 gap-y-2 text-sm">
       {keys.map((k) => (
-        <BarRow key={k} label={BIG5_NAMES[k]} value={big5[k]} suffix={BAND_LABEL[big5Band(big5[k])]} />
+        <BarRow key={k} label={BIG5_NAMES[k]} value={big5[k]} suffix={`${big5[k]} · ${BAND_LABEL[big5Band(big5[k])]}`} />
       ))}
     </div>
   );
@@ -41,15 +54,56 @@ export function ValueBars({ values }: { values: Result["values"] }) {
   );
 }
 
-function BarRow({ label, value, suffix }: { label: string; value: number; suffix: string }) {
+export function StrengthBars({ strengths }: { strengths: Result["strengths"] }) {
   return (
-    <>
-      <span className="font-medium">{label}</span>
-      <div className="h-2.5 overflow-hidden rounded-full bg-line" aria-hidden="true">
-        <div className="h-full rounded-full bg-accent" style={{ width: `${Math.max(2, Math.min(100, value))}%` }} />
+    <div>
+      <div className="grid grid-cols-[auto_1fr_auto] items-center gap-x-4 gap-y-2 text-sm">
+        {strengths.top5.map((k) => (
+          <BarRow key={k} label={STRENGTHS[k].name} value={strengths.scores[k]} suffix={String(strengths.scores[k])} />
+        ))}
       </div>
-      <span className="text-muted tabular-nums">{suffix}</span>
-    </>
+      <p className="mt-3 text-sm text-muted">الأدنى: {strengths.bottom3.map((k) => STRENGTHS[k].name).join("، ")}</p>
+    </div>
+  );
+}
+
+/** بطاقة النمط: الرمز والاسم وأربعة أبعاد بقطبيها */
+export function TypeCard({ ptype, compact = false }: { ptype: Result["ptype"]; compact?: boolean }) {
+  const dims: Dichotomy[] = ["EI", "SN", "TF", "JP"];
+  return (
+    <div className="card">
+      <div className="flex flex-wrap items-baseline gap-3">
+        <span className="display text-4xl text-accent-deep" dir="ltr">{ptype.code}</span>
+        <span className="text-xl font-bold">{ptype.name}</span>
+      </div>
+      <div className="mt-4 space-y-3">
+        {dims.map((k) => {
+          const m = DICHOTOMY_META[k];
+          const pct = ptype.pct[k];
+          const posSide = pct >= 50;
+          return (
+            <div key={k}>
+              <div className="flex items-center justify-between text-sm">
+                <span className={`font-semibold ${posSide ? "" : "text-muted"}`}>{m.pos} {posSide ? `${pct}%` : ""}</span>
+                <span className="text-xs text-muted">{m.title}</span>
+                <span className={`font-semibold ${posSide ? "text-muted" : ""}`}>{posSide ? "" : `${100 - pct}% `}{m.neg}</span>
+              </div>
+              <div className="relative mt-1 h-2.5 overflow-hidden rounded-full bg-line" aria-hidden="true">
+                <div className="absolute inset-y-0 start-0 rounded-full bg-accent" style={{ width: `${pct}%` }} />
+              </div>
+              {!compact ? <p className="mt-1 text-xs text-muted">{posSide ? m.posDesc : m.negDesc}{ptype.balanced.includes(k) ? " · متوازن" : ""}</p> : null}
+            </div>
+          );
+        })}
+      </div>
+      {!compact && ptype.consistency.length ? (
+        <ul className="mt-3 list-disc ps-5 text-sm text-muted">
+          {ptype.consistency.map((c) => (
+            <li key={c}>{c}</li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
   );
 }
 

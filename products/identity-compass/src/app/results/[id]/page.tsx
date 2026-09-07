@@ -4,7 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { LocalResults } from "@/components/LocalResults";
 import { Paywall } from "@/components/Paywall";
 import { ReportView } from "@/components/ReportView";
-import { Big5Bars, Gauge, StatusChips } from "@/components/ScoreBars";
+import { Big5Bars, Gauge, StatusChips, TypeCard } from "@/components/ScoreBars";
 import { hasFullAccess } from "@/lib/access";
 import { buildReport } from "@/lib/engine/report";
 import type { Answers, Result } from "@/lib/engine/types";
@@ -29,6 +29,8 @@ export default async function ResultsPage({ params }: { params: Promise<{ id: st
   const unlocked = await hasFullAccess(id);
   const name = String(answers.p_name || "").trim();
 
+  const paywall = <Paywall assessmentId={id} userId={user.id} email={user.email ?? undefined} />;
+
   return (
     <div className="container-prose py-10 space-y-8">
       <header>
@@ -37,9 +39,9 @@ export default async function ResultsPage({ params }: { params: Promise<{ id: st
       </header>
       <Gauge score={result.index.score} band={result.index.band} />
       <StatusChips result={result} />
-      <div className="card">
-        <h2 className="mb-3 text-lg font-bold">سمات الشخصية</h2>
-        <Big5Bars big5={result.big5} />
+      <div className="grid gap-5 md:grid-cols-2">
+        <TypeCard ptype={result.ptype} compact />
+        <div className="card"><h2 className="mb-3 text-lg font-bold">سمات الشخصية</h2><Big5Bars big5={result.big5} /></div>
       </div>
 
       {unlocked ? (
@@ -48,12 +50,12 @@ export default async function ResultsPage({ params }: { params: Promise<{ id: st
           <Link href={`/report/${id}`} className="btn-primary">افتح التقرير الكامل</Link>
         </div>
       ) : (
-        <Paywall assessmentId={id} userId={user.id} email={user.email ?? undefined} />
+        paywall
       )}
 
       <ReportView blocks={blocks} unlocked={unlocked} />
 
-      {!unlocked ? <Paywall assessmentId={id} userId={user.id} email={user.email ?? undefined} /> : null}
+      {!unlocked ? paywall : null}
     </div>
   );
 }

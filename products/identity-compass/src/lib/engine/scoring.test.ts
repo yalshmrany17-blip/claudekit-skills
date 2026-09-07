@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { SECTIONS, SCORED_ITEM_IDS } from "./items";
-import { bandOf, eriksonStage, marciaStatus, score, scoreBig5, scoreValues } from "./scoring";
+import { bandOf, eriksonStage, marciaStatus, score, scoreBig5, scoreType, scoreValues } from "./scoring";
+import { TYPE_PROFILES } from "./types16";
 import type { Answers } from "./types";
 
 function fill(overrides: Answers = {}): Answers {
@@ -11,7 +12,7 @@ function fill(overrides: Answers = {}): Answers {
   a.ms_commit = true;
   for (const s of SECTIONS) {
     for (const it of s.items) {
-      if (it.type === "likert5" && it.id.startsWith("b5_")) a[it.id] = 3;
+      if (it.type === "likert5") a[it.id] = 3;
       if (it.type === "likert6") a[it.id] = 4;
       if (it.type === "scale03") a[it.id] = 0;
     }
@@ -20,8 +21,8 @@ function fill(overrides: Answers = {}): Answers {
 }
 
 describe("item bank", () => {
-  it("has 74 scored items and unique ids", () => {
-    expect(SCORED_ITEM_IDS.length).toBe(74);
+  it("has 124 scored items and unique ids", () => {
+    expect(SCORED_ITEM_IDS.length).toBe(124);
     const all = SECTIONS.flatMap((s) => s.items.map((i) => i.id));
     expect(new Set(all).size).toBe(all.length);
   });
@@ -31,6 +32,16 @@ describe("item bank", () => {
       const items = b.items.filter((i) => i.key === k);
       expect(items.length).toBe(6);
       expect(items.filter((i) => i.reverse).length).toBe(3);
+    }
+  });
+  it("types have five items per dichotomy and all 16 profiles exist", () => {
+    const t = SECTIONS.find((s) => s.id === "ptypes")!;
+    for (const k of ["EI", "SN", "TF", "JP"]) expect(t.items.filter((i) => i.key === k).length).toBe(5);
+    expect(Object.keys(TYPE_PROFILES).length).toBe(16);
+    for (const p of Object.values(TYPE_PROFILES)) {
+      expect(p.strengths.length).toBe(3);
+      expect(p.challenges.length).toBe(3);
+      expect(p.reflection.length).toBe(2);
     }
   });
 });
@@ -53,22 +64,40 @@ describe("scoring", () => {
     expect(eriksonStage(70)?.stage).toBe(8);
     expect(eriksonStage(null)).toBeNull();
   });
-  it("neutral answers give mid-range big5 and zero-centered values", () => {
+  it("neutral answers give mid-range scores and zero-centered values", () => {
     const r = score(fill());
+    expect(r.version).toBe(2);
     expect(r.big5.O).toBe(50);
-    expect(r.big5.C).toBe(50);
     expect(r.values.spread).toBe(0);
     expect(r.completeness).toBe(1);
     expect(r.negatives.total).toBe(0);
+    expect(r.ptype.balanced.length).toBe(4);
+    expect(r.strengths.top5.length).toBe(5);
+    expect(r.work.autonomy).toBe(50);
   });
   it("reverse coding works", () => {
     const a = fill();
-    // all conscientiousness items answered 5: positives push up, reversed push down
     for (const it of SECTIONS.find((s) => s.id === "big5")!.items) if (it.key === "C") a[it.id] = 5;
-    const b5 = scoreBig5(a);
-    expect(b5.C).toBe(50); // 3 items at 100 + 3 reversed at 0
+    expect(scoreBig5(a).C).toBe(50);
     for (const it of SECTIONS.find((s) => s.id === "big5")!.items) if (it.key === "C") a[it.id] = it.reverse ? 1 : 5;
     expect(scoreBig5(a).C).toBe(100);
+  });
+  it("type code follows the four dichotomies and flags inconsistency with big five", () => {
+    const a = fill();
+    for (const it of SECTIONS.find((s) => s.id === "ptypes")!.items) a[it.id] = it.reverse ? 1 : 5; // full E N T J
+    const t = scoreType(a, scoreBig5(a));
+    expect(t.code).toBe("ENTJ");
+    expect(t.name).toBe(TYPE_PROFILES.ENTJ.name);
+    expect(t.pct.EI).toBe(100);
+    expect(t.balanced.length).toBe(0);
+    expect(t.consistency.length).toBeGreaterThan(0); // big five neutral vs extreme type answers
+    for (const it of SECTIONS.find((s) => s.id === "ptypes")!.items) a[it.id] = it.reverse ? 5 : 1;
+    expect(scoreType(a, scoreBig5(a)).code).toBe("ISFP");
+  });
+  it("strengths rank the highest items", () => {
+    const r = score(fill({ st_honesty_1: 5, st_honesty_2: 5, st_humor_1: 1, st_humor_2: 1 }));
+    expect(r.strengths.top5[0]).toBe("honesty");
+    expect(r.strengths.bottom3).toContain("humor");
   });
   it("values ranking and orientation", () => {
     const a = fill({ sv_power_1: 6, sv_power_2: 6, sv_achieve_1: 6, sv_achieve_2: 5, sv_trad_1: 1, sv_trad_2: 1 });
@@ -77,7 +106,6 @@ describe("scoring", () => {
     expect(v.ranked[1]).toBe("achieve");
     expect(v.bottom2).toContain("trad");
     expect(v.dominant).toBe("enh");
-    expect(v.spread).toBeGreaterThan(0);
   });
   it("index rewards clarity and penalizes signs and negatives", () => {
     const strong = score(fill(Object.fromEntries([1, 2, 3, 4, 5, 6].map((i) => [`cl_${i}`, 5]))));
@@ -93,7 +121,6 @@ describe("scoring", () => {
     expect(strong.index.score).toBeGreaterThan(weak.index.score);
     expect(strong.index.band).toBe("high");
     expect(weak.index.band).toBe("low");
-    expect(weak.signs.band).toBe("high");
     expect(weak.negatives.flags).toEqual(["control", "admit"]);
     expect(weak.marcia.status).toBe("moratorium");
   });

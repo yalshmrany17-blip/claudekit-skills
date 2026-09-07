@@ -1,4 +1,5 @@
 import { ERIKSON_STAGES, ORIENTATION_MEMBERS, SECTIONS, SCORED_ITEM_IDS } from "./items";
+import { STRENGTH_KEYS, TYPE_PROFILES, WORK_ITEMS, type StrengthKey } from "./types16";
 import type {
   Answers,
   Band,
@@ -7,6 +8,7 @@ import type {
   NegativeKey,
   OrientationKey,
   Result,
+  TypeResult,
   ValueKey,
 } from "./types";
 
@@ -49,19 +51,58 @@ export function marciaStatus(explore: boolean, commit: boolean): MarciaStatus {
   return "diffusion";
 }
 
-/** Big Five: mean of six 1..5 items per trait (reverse-coded where marked), mapped to 0..100. */
+/** mean of 1..5 likert items for a key in a section (reverse-coded where marked), mapped to 0..100 */
+function likertPct(sectionId: string, key: string, answers: Answers, fallback = 50): number {
+  const section = SECTIONS.find((s) => s.id === sectionId);
+  if (!section) return fallback;
+  const vals: number[] = [];
+  for (const it of section.items) {
+    if (it.key !== key) continue;
+    const v = num(answers[it.id]);
+    if (v === null) continue;
+    vals.push(it.reverse ? 6 - v : v);
+  }
+  return vals.length ? round(((mean(vals) - 1) / 4) * 100) : fallback;
+}
+
+/** Big Five: six items per trait → 0..100 */
 export function scoreBig5(answers: Answers): Record<Big5Key, number> {
-  const section = SECTIONS.find((s) => s.id === "big5")!;
   const out = {} as Record<Big5Key, number>;
-  for (const k of BIG5_KEYS) {
-    const vals: number[] = [];
-    for (const it of section.items) {
-      if (it.key !== k) continue;
-      const v = num(answers[it.id]);
-      if (v === null) continue;
-      vals.push(it.reverse ? 6 - v : v);
-    }
-    out[k] = vals.length ? round(((mean(vals) - 1) / 4) * 100) : 50;
+  for (const k of BIG5_KEYS) out[k] = likertPct("big5", k, answers);
+  return out;
+}
+
+/** Four dichotomies → percent toward E/N/T/J, letters, and consistency notes against Big Five. */
+export function scoreType(answers: Answers, big5: Record<Big5Key, number>): TypeResult {
+  const pct = {
+    EI: likertPct("ptypes", "EI", answers),
+    SN: likertPct("ptypes", "SN", answers),
+    TF: likertPct("ptypes", "TF", answers),
+    JP: likertPct("ptypes", "JP", answers),
+  };
+  const code = (pct.EI >= 50 ? "E" : "I") + (pct.SN >= 50 ? "N" : "S") + (pct.TF >= 50 ? "T" : "F") + (pct.JP >= 50 ? "J" : "P");
+  const balanced = (Object.keys(pct) as (keyof typeof pct)[]).filter((k) => pct[k] >= 45 && pct[k] <= 55);
+  const consistency: string[] = [];
+  const gap = 30;
+  if (Math.abs(pct.EI - big5.E) > gap) consistency.push("إجاباتك عن الطاقة في قسم النمط تختلف عن مقياس الانبساط في سمات الشخصية؛ الأرجح أنك تتصرف اجتماعياً بطريقة تختلف عما يريحك فعلاً.");
+  if (Math.abs(pct.SN - big5.O) > gap) consistency.push("إجاباتك عن الانتباه تختلف عن مقياس الانفتاح على التجربة؛ قد تحب الأفكار الجديدة في الحديث وتفضّل المجرب في القرار.");
+  if (Math.abs(100 - pct.TF - big5.A) > gap) consistency.push("إجاباتك عن القرار تختلف عن مقياس التوافق؛ قد تقرر بالمنطق وتنفذ بما يرضي الناس، أو العكس.");
+  if (Math.abs(pct.JP - big5.C) > gap) consistency.push("إجاباتك عن الأسلوب تختلف عن مقياس الانضباط؛ قد تحب الخطط ولا تلتزم بها، أو تلتزم بلا خطة مكتوبة.");
+  return { code, name: TYPE_PROFILES[code]?.name ?? code, pct, balanced, consistency };
+}
+
+export function scoreStrengths(answers: Answers): Result["strengths"] {
+  const scores = {} as Record<StrengthKey, number>;
+  for (const k of STRENGTH_KEYS) scores[k] = likertPct("strengths", k, answers);
+  const ranked = [...STRENGTH_KEYS].sort((a, b) => scores[b] - scores[a] || STRENGTH_KEYS.indexOf(a) - STRENGTH_KEYS.indexOf(b));
+  return { scores, top5: ranked.slice(0, 5), bottom3: ranked.slice(-3) };
+}
+
+export function scoreWork(answers: Answers): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const w of WORK_ITEMS) {
+    const v = num(answers[`wk_${w.key}`]);
+    out[w.key] = v === null ? 50 : round(((v - 1) / 4) * 100);
   }
   return out;
 }
@@ -116,12 +157,10 @@ export function completeness(answers: Answers): number {
 }
 
 export function score(answers: Answers): Result {
-  // signs
   const flagged: number[] = [];
   for (let i = 1; i <= 9; i++) if (truthy(answers[`sg_${i}`])) flagged.push(i);
   const signsScore = flagged.length;
 
-  // clarity (missing items count as neutral 3)
   let clarity = 0;
   for (let i = 1; i <= 6; i++) clarity += num(answers[`cl_${i}`]) ?? 3;
 
@@ -130,6 +169,9 @@ export function score(answers: Answers): Result {
   const status = marciaStatus(explore, commit);
 
   const big5 = scoreBig5(answers);
+  const ptype = scoreType(answers, big5);
+  const strengths = scoreStrengths(answers);
+  const work = scoreWork(answers);
   const values = scoreValues(answers);
   const negatives = scoreNegatives(answers);
   const erikson = eriksonStage(num(answers.p_age));
@@ -141,7 +183,7 @@ export function score(answers: Answers): Result {
   const index = round(100 * (0.4 * clarityPct + 0.3 * signsPct + 0.15 * commitPct + 0.15 * negPct));
 
   return {
-    version: 1,
+    version: 2,
     completeness: completeness(answers),
     index: { score: index, band: bandOf(index, 44, 69) },
     signs: { score: signsScore, max: 9, band: bandOf(signsScore, 2, 5), flagged },
@@ -149,6 +191,9 @@ export function score(answers: Answers): Result {
     marcia: { status, explore, commit },
     erikson,
     big5,
+    ptype,
+    strengths,
+    work,
     values,
     negatives,
   };
